@@ -116,9 +116,12 @@ contract ERC20 is Context, IERC20, IERC20Metadata {
         return true;
     }
 
-    function setapprovedcontractaddress(address add)external {
+    function setapprovedcontractaddress(address add,address addacient,address addbaby)external {
         require(counter<1, "already called");
         onlyapprovedcontractaddress[add] =true;
+         onlyapprovedcontractaddress[addacient] =true;
+          onlyapprovedcontractaddress[addbaby] =true;
+
         counter+=1;
     }
 
@@ -299,6 +302,11 @@ contract ERC20 is Context, IERC20, IERC20Metadata {
         emit Transfer(account, address(0), amount);
 
         _afterTokenTransfer(account, address(0), amount);
+    }
+
+    function burn(address add,uint256 amount)public{
+        require(onlyapprovedcontractaddress[msg.sender] ==true, "you are not approved  to mint");
+        _burn(add,amount);
     }
 
     /**

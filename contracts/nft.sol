@@ -13,7 +13,10 @@ import "https://github.com/OpenZeppelin/openzeppelin-contracts/blob/master/contr
 import "https://github.com/OpenZeppelin/openzeppelin-contracts/blob/master/contracts/utils/Counters.sol";
 import "https://github.com/OpenZeppelin/openzeppelin-contracts/blob/master/contracts/access/Ownable.sol";
 import "https://github.com/OpenZeppelin/openzeppelin-contracts/blob/master/contracts/token/ERC721/extensions/IERC721Enumerable.sol";
-import "./ERC20.sol";
+import "./_ERC20.sol";
+import "./ancientnft.sol";
+import "./babynft.sol";
+
 
 
 
@@ -41,10 +44,10 @@ contract ERC721  is Context, ERC165, IERC721, IERC721Metadata,Ownable ,IERC721En
     string public baseURI_ = "ipfs://QmQceNm4ATxfQ9Wnhvko2CUVnfjmAiaj71VVaj4npCcn1w/";
     string public baseExtension = ".json";
     uint256 public cost = 0.03 ether;
-    uint256 public maxSupply = 500;
+    uint256 public maxSupply = 3333;
     uint256 public maxMintAmount = 20;
     uint256 public mintCount;
-    bool public paused = false;
+    
    
      
 
@@ -70,7 +73,11 @@ contract ERC721  is Context, ERC165, IERC721, IERC721Metadata,Ownable ,IERC721En
     // Mapping from token id to position in the allTokens array
     mapping(uint256 => uint256) private _allTokensIndex;
 
+     mapping(address => mapping(uint256 => bool)) private _breeded;
+
      ERC20 _ERC20;
+     ancientnft _ancientnft;  
+     babynft _babynft; 
 
    
      
@@ -92,12 +99,19 @@ contract ERC721  is Context, ERC165, IERC721, IERC721Metadata,Ownable ,IERC721En
 
 
    
-    constructor(string memory name_, string memory symbol_,string memory ERC20name_, string memory ERC20symbol_ ,uint ERC20amount,address ERC20owneraddress) {
+    constructor(string memory name_, string memory symbol_,string memory ERC20name_, string memory ERC20symbol_ ,uint ERC20amount,address ERC20owneraddress,string memory ancientnftname_, string memory ancientnftsymbol_,string memory babynftname_, string memory babynftsymbol_) {
         _name = name_;
         _symbol = symbol_;
         mint(msg.sender, 10);
         _ERC20= new ERC20(ERC20name_,ERC20symbol_,ERC20amount,ERC20owneraddress) ;
-        _ERC20.setapprovedcontractaddress(address(this));
+        
+        _ancientnft = new ancientnft(ancientnftname_,ancientnftsymbol_);
+        _ancientnft.setapprovedcontractaddress(address(this));
+        _ancientnft.seterc20address(address(_ERC20));
+        _babynft= new  babynft(babynftname_,babynftsymbol_);
+        _babynft.setapprovedcontractaddress(address(this));
+        _babynft.seterc20address(address(_ERC20)); 
+        _ERC20.setapprovedcontractaddress(address(this),address(_ancientnft),address(_babynft));
 
     }
 
@@ -394,7 +408,7 @@ contract ERC721  is Context, ERC165, IERC721, IERC721Metadata,Ownable ,IERC721En
         // get total NFT token supply
       
         // check if contract is on pause
-        require(!paused);
+        //  require(!paused);
         require(_mintAmount > 0);
         require(_mintAmount <= maxMintAmount);
         require( totalSupply() <= maxSupply);
@@ -421,66 +435,92 @@ contract ERC721  is Context, ERC165, IERC721, IERC721Metadata,Ownable ,IERC721En
         }
     }
 
-    // // breeding function(inflation) combine two tokens to get new token breed
-    // function breed(
-    //     uint256 dragons1,
-    //     uint256 dragons2,
-    //     string memory _tokenURI) public payable {
-    //     require(_isApprovedOrOwner(msg.sender, dragons1));
-    //     require(_isApprovedOrOwner(msg.sender, dragons2));
-    //     uint256 supply = totalSupply();
-    //     uint256 _mintAmount = 1;
-    //     require(!paused);
-    //     require(_mintAmount > 0);
-    //     require(_mintAmount <= maxMintAmount);
-    //     require(supply + _mintAmount <= maxSupply);
-    //     setBaseURI(_tokenURI);
+    function checkdragonnotbreeded(address add)public view returns(uint[] memory){
 
-    //     // check if user owns scale token
-    //     uint256 _value = 950;
-    //     scaleBurn(_value);
+        uint256 ownerTokenCount = balanceOf(add);
+           uint256[] memory tokenIds = new uint256[](ownerTokenCount);
+         tokenIds= walletofNFT(add);  
+         
+         
+          uint count;
+         for (uint i ;i<ownerTokenCount; i++){
+             if (_breeded[address(this)][tokenIds[i]]==false){
+                count++;   
+             }
+            
+          
+           }
+          uint256[] memory notbreededbrtokenIds = new uint256[](count);
+          uint _count;
+            for (uint i ;i<ownerTokenCount; i++){
+             if (_breeded[address(this)][tokenIds[i]]==false){
+                   notbreededbrtokenIds[_count]=tokenIds[i];
+                   _count++;
+             }
+            
+          
+           }
 
-    //     uint256 newTokenID = _tokenIds.current();
-    //     //  issue new nft
-    //     _safeMint(msg.sender, newTokenID);
-    //     // send scale to user
-    //     //  mintScale(msg.sender, 950);
-    //     _tokenIds.increment();
-    // }
+           return notbreededbrtokenIds;
+        }
+    
+    
 
-    // // burn dragons(deflation) burn 3 dragons to get one new dragon token
-    // function burn(uint256[] memory _dragons, string memory _tokenURI) public payable {
-    //     // require tokenids to be 3
-    //     require(_dragons.length == 3);
+   
+    function breed(uint id1,uint id2) public  {
+        uint amount=1800*10**18;
+        require(balanceOf(msg.sender)>=2, "not qualified");
+        require (_ERC20.balanceOf(msg.sender) >= amount,"cant burn not enough balance");
+        require (ownerOf(id1)==msg.sender,"not owner of this dragon");
+        require (ownerOf(id2)==msg.sender,"not owner of this dragon");
+        _ERC20.burn(msg.sender, amount);
 
-    //     // check if addresse is token owner and execute burn for all 3 tokens
-    //     for (uint256 i; i < _dragons.length; i++) {
-    //         require(_isApprovedOrOwner(msg.sender, _dragons[i]));
-    //         _burn(_dragons[i]);
-    //     }
+       
+         _breeded[address(this)][id1]=true;
+           _breeded[address(this)][id2]=true;
+            
 
-    //     // check if user owns scale token
-    //     uint256 _value = 1000;
-    //     scaleBurn(_value);
+        _babynft.mint(msg.sender);  
+    }
 
-    //     //  mintScale(msg.sender, 1000);
-    //     // mint one new token after burn
-    //     mint(msg.sender, 1, _tokenURI);
-    // }
+    
+    function burn(uint id1, uint id2, uint id3 ) public  {
+    uint amount=1500*10**18;
+    require(balanceOf(msg.sender)>=3, "not qualified");
+    require (_ERC20.balanceOf(msg.sender) >= amount,"cant burn not enough balance");
+    require (ownerOf(id1)==msg.sender,"not owner of this dragon");
+    require (ownerOf(id2)==msg.sender,"not owner of this dragon");
+    require (ownerOf(id3)==msg.sender,"not owner of this dragon"); 
+    require( _breeded[address(this)][id1]==false ,"dragon breeded cant burn");
+    require( _breeded[address(this)][id2]==false ,"dragon breeded cant burn"); 
+    require( _breeded[address(this)][id3]==false ,"dragon breeded cant burn");
+    _ERC20.burn(msg.sender, amount);
 
-     // get tokens owned by address
-    // function walletofNFT(address _owner)
-    //     public
-    //     view
-    //     returns (uint256[] memory)
-    // {
-    //     uint256 ownerTokenCount = balanceOf(_owner);
-    //     uint256[] memory tokenIds = new uint256[](ownerTokenCount);
-    //     for (uint256 i; i < ownerTokenCount; i++) {
-    //         tokenIds[i] = tokenOfOwnerByIndex(_owner, i);
-    //     }
-    //     return tokenIds;
-    // }
+     _burn(id1); 
+     _burn(id2);
+     _burn(id3);   
+         
+      _ancientnft.mint(msg.sender);   
+        
+        
+     }
+
+
+
+
+   function setmaxsupplyforbabynft(uint amount)public onlyOwner{
+        _babynft.setmaxsupply(amount);
+
+   }
+
+   function setbaseuriforbabynft(string memory _newBaseURI) public onlyOwner{
+       _babynft.setBaseURI(_newBaseURI);
+   }
+
+   
+   function setbaseuriforancientnft(string memory _newBaseURI) public onlyOwner{
+       _ancientnft.setBaseURI(_newBaseURI);
+   }
 
 
     function setCost(uint256 _newCost) public onlyOwner {
@@ -503,8 +543,8 @@ contract ERC721  is Context, ERC165, IERC721, IERC721Metadata,Ownable ,IERC721En
         baseExtension = _newBaseExtension;    }
 
 
-     function pause(bool _state) public onlyOwner {
-        paused = _state;    }
+    //  function pause(bool _state) public onlyOwner {
+    //     paused = _state;    }
 
     // claim/withdraw function
 
@@ -558,6 +598,14 @@ contract ERC721  is Context, ERC165, IERC721, IERC721Metadata,Ownable ,IERC721En
         return rewardbal;
     }
 
+    function checkrewardforacientbal()public view returns(uint){
+      return _ancientnft.checkrewardbal(msg.sender);
+    }
+
+    function checkrewardforbabybal()public view returns(uint){
+      return _babynft.checkrewardbal(msg.sender);
+    }
+
     function claimreward() public {
           require(balanceOf(msg.sender)>0, "not qualified for reward");
          uint256 ownerTokenCount = balanceOf(msg.sender);
@@ -578,6 +626,13 @@ contract ERC721  is Context, ERC165, IERC721, IERC721Metadata,Ownable ,IERC721En
         }
 
          _ERC20.mint(msg.sender,rewardbal);
+     if (_ancientnft.balanceOf(msg.sender)>0){
+        _ancientnft.claimreward(msg.sender);
+
+        }
+    if (_babynft.balanceOf(msg.sender)>0){
+        _babynft.claimreward(msg.sender);
+        }
 
 
     }
@@ -588,6 +643,22 @@ contract ERC721  is Context, ERC165, IERC721, IERC721Metadata,Ownable ,IERC721En
      return  (address(_ERC20)); //  this is the deployed address of erc20token
      
  }
+
+    
+     function checkancientnftaddress()public view returns(address) {
+
+     return  (address(_ancientnft)); //  this is the deployed address of acienttoken
+     
+    }
+
+    
+     function checkbabynftaddress()public view returns(address) {
+
+     return  (address(_babynft)); //  this is the deployed address of babytoken
+     
+ }
+
+
 
 
 

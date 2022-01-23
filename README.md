@@ -1,2 +1,2 @@
-# etherscan contract address
+# Mainnet contract address
 0xC0c7Eb8E88e7244F7C3569E483ad891F5a508a60

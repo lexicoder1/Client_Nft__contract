@@ -21,7 +21,7 @@ import "./babynft.sol";
 
 
 
-contract ERC721  is Context, ERC165, IERC721, IERC721Metadata,Ownable ,IERC721Enumerable {
+contract ERC721  is Context, ERC165, IERC721, IERC721Metadata, Ownable, IERC721Enumerable {
     using Address for address;
     using Strings for uint256;
     using Counters for Counters.Counter;
@@ -41,23 +41,22 @@ contract ERC721  is Context, ERC165, IERC721, IERC721Metadata,Ownable ,IERC721En
     
     
 
-    string public baseURI_ = "ipfs://QmQceNm4ATxfQ9Wnhvko2CUVnfjmAiaj71VVaj4npCcn1w/";
+    string public baseURI_ = "ipfs://QmeWdrqHA32zQRjU9oKmsi6NDGdv1dpnyxRi3pcm27Dkqb/";
     string public baseExtension = ".json";
     uint256 public cost = 0.03 ether;
     uint256 public maxSupply = 3333;
-    uint256 public maxMintAmount = 20;
-    uint256 public mintCount;
-    
+    uint256 public maxMintAmount = 10;
+    bool public paused = false;
    
      
 
      // wallet addresses for claims
-    address private constant _dani = 0x31FbcD30AA07FBbeA5DB938cD534D1dA79E34985;
-    address private constant _archie =
+    address private constant possumchsr69 = 0x31FbcD30AA07FBbeA5DB938cD534D1dA79E34985;
+    address private constant Jazzasaurus =
         0xd848353706E5a26BAa6DD20265EDDe1e7047d9ba;
-    address private constant _nate = 0xC03e1522a67Ddd1c6767e2368B671bA92fea420F;
+    address private constant munheezy = 0xB6D2ac64BDc24f76417b95b410ACf47cE31AdD07;
     address private constant _community =
-        0x65dbAe8A5b650b526f424140645b80BC38d997e4;
+        0xe44CB360e48dA69fe75a78fD1649ccbd3CCf7AD1;
     
     mapping(uint => mapping(address => uint)) private idtostartingtimet;
 
@@ -80,7 +79,6 @@ contract ERC721  is Context, ERC165, IERC721, IERC721Metadata,Ownable ,IERC721En
      babynft _babynft; 
 
    
-     
 
 
 
@@ -139,6 +137,14 @@ contract ERC721  is Context, ERC165, IERC721, IERC721Metadata,Ownable ,IERC721En
         return _allTokens[index];
     }
 
+    function pause() public onlyOwner  {
+        paused = !paused;
+
+     }
+
+    function checkPause() public view onlyOwner returns(bool) {
+        return paused; 
+    }
  
     function _beforeTokenTransfer(
         address from,
@@ -407,20 +413,17 @@ contract ERC721  is Context, ERC165, IERC721, IERC721Metadata,Ownable ,IERC721En
     ) public payable {
         // get total NFT token supply
       
-        // check if contract is on pause
-        //  require(!paused);
         require(_mintAmount > 0);
         require(_mintAmount <= maxMintAmount);
-        require( totalSupply() <= maxSupply);
-
+        require( totalSupply() + _mintAmount <= maxSupply);
+        require(paused == false);
         
             // minting is free for first 200 request after which payment is required
-        if (mintCount >= 200) {
+        if ( totalSupply() >= 200) {
                 require(msg.value >= cost * _mintAmount);
             }
         
 
-        // set metada url
     
 
         // execute mint
@@ -469,10 +472,10 @@ contract ERC721  is Context, ERC165, IERC721, IERC721Metadata,Ownable ,IERC721En
    
     function breed(uint id1,uint id2) public  {
         uint amount=1800*10**18;
-        require(balanceOf(msg.sender)>=2, "not qualified");
-        require (_ERC20.balanceOf(msg.sender) >= amount,"cant burn not enough balance");
-        require (ownerOf(id1)==msg.sender,"not owner of this dragon");
-        require (ownerOf(id2)==msg.sender,"not owner of this dragon");
+        require(balanceOf(msg.sender)>=2, "Must Own 2 0xDragons");
+        require (_ERC20.balanceOf(msg.sender) >= amount,"You Dont Have The $SCALE For That!");
+        require (ownerOf(id1)==msg.sender,"NOT YOUR DRAGON");
+        require (ownerOf(id2)==msg.sender,"NOT YOUR DRAGON");
         _ERC20.burn(msg.sender, amount);
 
        
@@ -486,19 +489,31 @@ contract ERC721  is Context, ERC165, IERC721, IERC721Metadata,Ownable ,IERC721En
     
     function burn(uint id1, uint id2, uint id3 ) public  {
     uint amount=1500*10**18;
-    require(balanceOf(msg.sender)>=3, "not qualified");
-    require (_ERC20.balanceOf(msg.sender) >= amount,"cant burn not enough balance");
-    require (ownerOf(id1)==msg.sender,"not owner of this dragon");
-    require (ownerOf(id2)==msg.sender,"not owner of this dragon");
-    require (ownerOf(id3)==msg.sender,"not owner of this dragon"); 
-    require( _breeded[address(this)][id1]==false ,"dragon breeded cant burn");
-    require( _breeded[address(this)][id2]==false ,"dragon breeded cant burn"); 
-    require( _breeded[address(this)][id3]==false ,"dragon breeded cant burn");
+    require(balanceOf(msg.sender)>=3, "Must Have 3 UNBRED Dragons");
+    require (_ERC20.balanceOf(msg.sender) >= amount,"You Dont Have The $SCALE For That!");
+    require (ownerOf(id1)==msg.sender,"NOT YOUR DRAGON");
+    require (ownerOf(id2)==msg.sender,"NOT YOUR DRAGON");
+    require (ownerOf(id3)==msg.sender,"NOT YOUR DRAGON"); 
+    require( _breeded[address(this)][id1]==false ,"Bred Dragons CAN'T Be Sacrificed");
+    require( _breeded[address(this)][id2]==false ,"Bred Dragons CAN'T Be Sacrificed"); 
+    require( _breeded[address(this)][id3]==false ,"Bred Dragons CAN'T Be Sacrificed");
     _ERC20.burn(msg.sender, amount);
 
-     _burn(id1); 
-     _burn(id2);
-     _burn(id3);   
+  _transfer(
+      msg.sender,
+      0x000000000000000000000000000000000000dEaD,
+      id1
+);
+_transfer(
+      msg.sender,
+      0x000000000000000000000000000000000000dEaD,
+      id2
+);
+_transfer(
+      msg.sender,
+      0x000000000000000000000000000000000000dEaD,
+      id3
+);   
          
       _ancientnft.mint(msg.sender);   
         
@@ -543,10 +558,7 @@ contract ERC721  is Context, ERC165, IERC721, IERC721Metadata,Ownable ,IERC721En
         baseExtension = _newBaseExtension;    }
 
 
-    //  function pause(bool _state) public onlyOwner {
-    //     paused = _state;    }
-
-    // claim/withdraw function
+    
 
     function claim() public onlyOwner {
         // get contract total balance
@@ -554,13 +566,13 @@ contract ERC721  is Context, ERC165, IERC721, IERC721Metadata,Ownable ,IERC721En
         // begin withdraw based on address percentage
 
         // 40%
-        payable(_archie).transfer((balance / 100) * 40);
-        // 40%
-        payable(_dani).transfer((balance / 100) * 40);
-        // 10%
-        payable(_nate).transfer((balance / 100) * 10);
-        // 10%
-        payable(_community).transfer((balance / 100) * 10);
+        payable(Jazzasaurus).transfer((balance / 100) * 40);
+        // 20%
+        payable(possumchsr69).transfer((balance / 100) * 20);
+        // 25%
+        payable(munheezy).transfer((balance / 100) * 25);
+        // 15%
+        payable(_community).transfer((balance / 100) * 15);
     }
 
       function walletofNFT(address _owner)
@@ -598,7 +610,7 @@ contract ERC721  is Context, ERC165, IERC721, IERC721Metadata,Ownable ,IERC721En
         return rewardbal;
     }
 
-    function checkrewardforacientbal()public view returns(uint){
+    function checkrewardforancientbal()public view returns(uint){
       return _ancientnft.checkrewardbal(msg.sender);
     }
 
@@ -607,7 +619,7 @@ contract ERC721  is Context, ERC165, IERC721, IERC721Metadata,Ownable ,IERC721En
     }
 
     function claimreward() public {
-          require(balanceOf(msg.sender)>0, "not qualified for reward");
+          require(balanceOf(msg.sender)>0, "Not Qualified For Reward");
          uint256 ownerTokenCount = balanceOf(msg.sender);
            uint256[] memory tokenIds = new uint256[](ownerTokenCount);
          tokenIds= walletofNFT(msg.sender);
@@ -647,7 +659,7 @@ contract ERC721  is Context, ERC165, IERC721, IERC721Metadata,Ownable ,IERC721En
     
      function checkancientnftaddress()public view returns(address) {
 
-     return  (address(_ancientnft)); //  this is the deployed address of acienttoken
+     return  (address(_ancientnft)); //  this is the deployed address of ancienttoken
      
     }
 
@@ -727,12 +739,6 @@ contract ERC721  is Context, ERC165, IERC721, IERC721Metadata,Ownable ,IERC721En
         }
     }
 
-  
-    // function _beforeTokenTransfer(
-    //     address from,
-    //     address to,
-    //     uint256 tokenId
-    // ) internal virtual {}
 
   
     function _afterTokenTransfer(
